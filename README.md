@@ -50,3 +50,28 @@ curl localhost:8080
 curl localhost:8080/profiles -H "Content-Type: application/json" -X POST -d '{"firstName": "Jim", "lastName": "Smith"}'
 curl localhost:8080/profiles/1
 
+
+
+## VSTS build pipeline
+
+# build jar without tests
+> gradle assemble 
+
+# build image with a tag of [dockerhub username/][reponame]:tag-name
+> docker build .
+
+# tag the image
+> docker tag image_id [registry url]/[repo]:[tag]
+
+# login to registry
+docker login [registry url]
+
+# push the image
+> docker push [registry url]/[repo]:[tag]
+
+
+## deployment
+# create sql database [teambeta]-[repo-tag] (server [teambeta])
+# create webapp linux - with encironment variables [teambeta-[repo-tag]]
+JDBC_DRIVER
+JDBC_URL
