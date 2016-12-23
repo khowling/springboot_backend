@@ -20,12 +20,12 @@ cd backend
 sqllocaldb s MSSQLLocalDB
 
 $env:PORT=5400
-$env:JDBC_DRIVER="net.sourceforge.jtds.jdbc.Driver"
 
+$env:JDBC_DRIVER="net.sourceforge.jtds.jdbc.Driver"
 $env:INSTANCE="LOCALDB#D50FD6D9" 
 $env:JDBC_DBNAME="devdb"
 $env:JDBC_USERNAME="dev"
-$env:JDBC_PASSWORD="pw123123!"
+$env:JDBC_PASSWORD="xxxxxxx"
 
 
 $env:JDBC_URL="jdbc:jtds:sqlserver://./" + $env:JDBC_DBNAME + ";instance=" + $env:INSTANCE + ";namedPipe=true;useJCIFS=false;user=" + $env:JDBC_USERNAME + ";password=" + $env:JDBC_PASSWORD
