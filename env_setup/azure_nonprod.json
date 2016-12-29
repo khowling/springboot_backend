@@ -16,14 +16,15 @@
         }
     },
     "variables": {
+        "varified_app_name":       "[toLower(replace(replace(parameters('app_name'),' ','-'), '_', '-'))]",
         "core_resources_name":     "[toLower(resourceGroup().name)]",
         "core_serverfarms_id":     "[resourceId('Microsoft.Web/serverfarms', variables('core_resources_name'))]",
         "core_sql_server_id":      "[resourceId('Microsoft.Sql/servers',     variables('core_resources_name'))]",
-        "qualified_app_name":      "[toLower(concat(variables('core_resources_name'), '-', parameters('app_name')))]",
-        "qualified_database_name": "[toLower(concat(variables('core_resources_name'), '/', variables('qualified_app_name')))]",
+        "qualified_app_name":      "[variables('varified_app_name')]",
+        "qualified_database_name": "[concat(variables('core_resources_name'), '/', variables('qualified_app_name'))]",
         "qualified_database_id":   "[resourceId('Microsoft.Sql/servers/databases', variables('core_resources_name'), variables('qualified_app_name'))]",
-        "jdbc_url": "[concat('jdbc:sqlserver://', variables('core_resources_name'), '.database.windows.net:1433;database=', variables('qualified_app_name'), ';user=', parameters('sql_user'), '@' , variables('core_resources_name'), ';password=', parameters('sql_passwd'), ';encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;')]",
-        "jdbc_driver": "com.microsoft.sqlserver.jdbc.SQLServerConnection"
+        "jdbc_url":                "[concat('jdbc:sqlserver://', variables('core_resources_name'), '.database.windows.net:1433;database=', variables('qualified_app_name'), ';user=', parameters('sql_user'), '@' , variables('core_resources_name'), ';password=', parameters('sql_passwd'), ';encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;')]",
+        "jdbc_driver":             "com.microsoft.sqlserver.jdbc.SQLServerConnection"
     },
     "resources": [
         {
