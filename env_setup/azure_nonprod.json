@@ -1,0 +1,132 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "app_name": {
+            "type": "String"
+        },
+        "sql_user": {
+             "type": "String",
+             "minLength": 5,
+             "defaultValue": "sqladmin"
+        },
+        "sql_passwd": {
+            "minLength": 8,
+            "type": "secureString"
+        }
+    },
+    "variables": {
+        "core_resources_name":     "[toLower(resourceGroup().name)]",
+        "core_serverfarms_id":     "[resourceId('Microsoft.Web/serverfarms', variables('core_resources_name'))]",
+        "core_sql_server_id":      "[resourceId('Microsoft.Sql/servers',     variables('core_resources_name'))]",
+        "qualified_app_name":      "[toLower(concat(variables('core_resources_name'), '-', parameters('app_name')))]",
+        "qualified_database_name": "[toLower(concat(variables('core_resources_name'), '/', variables('qualified_app_name')))]",
+        "qualified_database_id":   "[resourceId('Microsoft.Sql/servers/databases', variables('core_resources_name'), variables('qualified_app_name'))]",
+        "jdbc_url": "[concat('jdbc:sqlserver://', variables('core_resources_name'), '.database.windows.net:1433;database=', variables('qualified_app_name'), ';user=', parameters('sql_user'), '@' , variables('core_resources_name'), ';password=', parameters('sql_passwd'), ';encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;')]",
+        "jdbc_driver": "com.microsoft.sqlserver.jdbc.SQLServerConnection"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Web/serverfarms",
+            "sku": {
+                "name": "S1",
+                "tier": "Standard",
+                "size": "S1",
+                "family": "S",
+                "capacity": 1
+            },
+            "kind": "linux",
+            "name": "[variables('core_resources_name')]",
+            "apiVersion": "2015-08-01",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "name": "[variables('core_resources_name')]",
+                "numberOfWorkers": 1
+            },
+            "resources": [],
+            "dependsOn": [
+                "[variables('qualified_database_id')]"
+            ]
+        },
+        {
+            "type": "Microsoft.Web/sites",
+            "kind": "app",
+            "name": "[variables('qualified_app_name')]",
+            "apiVersion": "2015-08-01",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "name": "[variables('qualified_app_name')]",
+                "hostNames": [
+                    "[concat(variables('qualified_app_name'),'.azurewebsites.net')]"
+                ],
+                "enabledHostNames": [
+                    "[concat(variables('qualified_app_name'),'.azurewebsites.net')]",
+                    "[concat(variables('qualified_app_name'),'.scm.azurewebsites.net')]"
+                ],
+                "hostNameSslStates": [
+                    {
+                        "name": "[concat(variables('qualified_app_name'),'.azurewebsites.net')]",
+                        "sslState": 0,
+                        "thumbprint": null,
+                        "ipBasedSslState": 0
+                    },
+                    {
+                        "name": "[concat(variables('qualified_app_name'),'.scm.azurewebsites.net')]",
+                        "sslState": 0,
+                        "thumbprint": null,
+                        "ipBasedSslState": 0
+                    }
+                ],
+                "serverFarmId": "[variables('core_serverfarms_id')]"
+            },
+            "resources": [
+            {
+                "apiVersion": "2016-03-01",
+                "type": "config",
+                "name": "appsettings",
+                "dependsOn": [
+                    "[variables('qualified_app_name')]"
+                ],
+                "properties": {
+                    "JDBC_DRIVER": "[variables('jdbc_driver')]",
+                    "JDBC_URL": "[variables('jdbc_url')]"
+                    
+                }
+            }],
+            "dependsOn": [
+                "[variables('core_serverfarms_id')]"
+            ]
+        },
+        {
+            "type": "Microsoft.Sql/servers",
+            "kind": "v12.0",
+            "name": "[variables('core_resources_name')]",
+            "apiVersion": "2014-04-01-preview",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "administratorLogin": "[parameters('sql_user')]",
+                "administratorLoginPassword": "[parameters('sql_passwd')]",
+                "version": "12.0"
+            },
+            "resources": [],
+            "dependsOn": []
+        },
+        {
+            "type": "Microsoft.Sql/servers/databases",
+            "kind": "v12.0,user",
+            "name": "[variables('qualified_database_name')]",
+            "apiVersion": "2014-04-01-preview",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "edition": "Standard",
+                "serviceLevelObjective": "S3",
+                "collation": "SQL_Latin1_General_CP1_CI_AS",
+                "maxSizeBytes": "268435456000"
+            },
+            "resources": [],
+            "dependsOn": [
+                "[variables('core_sql_server_id')]"
+            ]
+        }
+    ]
+}

@@ -19,36 +19,32 @@ cd backend
 ### start the localDB (to get the namePipe)
 sqllocaldb s MSSQLLocalDB
 
+### set the environment variables
 $env:PORT=5400
-
 $env:JDBC_DRIVER="net.sourceforge.jtds.jdbc.Driver"
-$env:INSTANCE="LOCALDB#D50FD6D9" 
+$env:INSTANCE="LOCALDB#XXXXXXXXX" 
 $env:JDBC_DBNAME="devdb"
 $env:JDBC_USERNAME="dev"
-$env:JDBC_PASSWORD="xxxxxxx"
-
-
+$env:JDBC_PASSWORD="xxxxxxxxxxxx"
 $env:JDBC_URL="jdbc:jtds:sqlserver://./" + $env:JDBC_DBNAME + ";instance=" + $env:INSTANCE + ";namedPipe=true;useJCIFS=false;user=" + $env:JDBC_USERNAME + ";password=" + $env:JDBC_PASSWORD
 $env:PIPE_URL="np:\\.\pipe\" + $env:INSTANCE + "\tsql\query"
 
 
 ## re-create the development database and tables
-sqlcmd -S $env:PIPE_URL -v user=$env:JDBC_USERNAME -v dbname=$env:JDBC_DBNAME -v passwd=$env:JDBC_PASSWORD -i .\src\main\resources\import.sql
-
+sqlcmd -S $env:PIPE_URL -v user=$env:JDBC_USERNAME -v dbname=$env:JDBC_DBNAME -v passwd=$env:JDBC_PASSWORD -i env_setup\localdb.sql
 ## check all good
 sqlcmd -S $env:PIPE_URL -U $env:JDBC_USERNAME -P $env:JDBC_PASSWORD -d $env:JDBC_DBNAME
-
-> select name from sys.tables;
-> go
+        > select name from sys.tables;
+        > go
 
 ##To run a project in place without building a jar first you can use the “bootRun” task
 > gradle bootRun
 
 
 ## to test 
-curl localhost:8080
-curl localhost:8080/profiles -H "Content-Type: application/json" -X POST -d '{"firstName": "Jim", "lastName": "Smith"}'
-curl localhost:8080/profiles/1
+curl localhost:5400
+curl localhost:5400/profiles -H "Content-Type: application/json" -X POST -d '{"firstName": "Jim", "lastName": "Smith"}'
+curl localhost:5400/profiles/1
 
 
 
