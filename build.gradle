@@ -34,8 +34,12 @@ dependencies {
 	compile('org.springframework.cloud:spring-cloud-starter-oauth2')
 	compile('org.springframework.boot:spring-boot-starter-data-jpa')
 	compile('org.springframework.boot:spring-boot-starter-data-rest')
+	
+	/* for localdb - "net.sourceforge.jtds.jdbc.Driver" - using named pipe */
 	compile files('lib/jtds-1.3.3.jar')
+	/* for sql database - "com.microsoft.sqlserver.jdbc.SQLServerConnection" - using microsoft jdbc driver */
 	runtime('com.microsoft.sqlserver:mssql-jdbc')
+	
 	testCompile('org.springframework.boot:spring-boot-starter-test')
 }
 

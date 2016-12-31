@@ -3,16 +3,16 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "app_name": {
-            "type": "String"
+            "type": "string"
         },
         "sql_user": {
-             "type": "String",
+             "type": "string",
              "minLength": 5,
              "defaultValue": "sqladmin"
         },
         "sql_passwd": {
             "minLength": 8,
-            "type": "secureString"
+            "type": "securestring"
         }
     },
     "variables": {
