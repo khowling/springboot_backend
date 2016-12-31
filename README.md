@@ -118,3 +118,6 @@ JDBC_URL=
 
 ## to view
 > docker service ls
+# service logs
+> docker service ps <service>
+> docker logs $(docker inspect --format "{{.Status.ContainerStatus.ContainerID}}" ps)

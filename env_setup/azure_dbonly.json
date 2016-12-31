@@ -1,0 +1,58 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "app_name": {
+            "type": "string"
+        },
+        "sql_user": {
+             "type": "string",
+             "minLength": 5,
+             "defaultValue": "sqladmin"
+        },
+        "sql_passwd": {
+            "minLength": 8,
+            "type": "securestring"
+        }
+    },
+    "variables": {
+        "varified_app_name":       "[toLower(replace(replace(parameters('app_name'),' ','-'), '_', '-'))]",
+        "core_resources_name":     "[toLower(resourceGroup().name)]",
+        "core_sql_server_id":      "[resourceId('Microsoft.Sql/servers',     variables('core_resources_name'))]",
+        "qualified_app_name":      "[variables('varified_app_name')]",
+        "qualified_database_name": "[concat(variables('core_resources_name'), '/', variables('qualified_app_name'))]",
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Sql/servers",
+            "kind": "v12.0",
+            "name": "[variables('core_resources_name')]",
+            "apiVersion": "2014-04-01-preview",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "administratorLogin": "[parameters('sql_user')]",
+                "administratorLoginPassword": "[parameters('sql_passwd')]",
+                "version": "12.0"
+            },
+            "resources": [],
+            "dependsOn": []
+        },
+        {
+            "type": "Microsoft.Sql/servers/databases",
+            "kind": "v12.0,user",
+            "name": "[variables('qualified_database_name')]",
+            "apiVersion": "2014-04-01-preview",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "edition": "Standard",
+                "serviceLevelObjective": "S3",
+                "collation": "SQL_Latin1_General_CP1_CI_AS",
+                "maxSizeBytes": "268435456000"
+            },
+            "resources": [],
+            "dependsOn": [
+                "[variables('core_sql_server_id')]"
+            ]
+        }
+    ]
+}
