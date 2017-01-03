@@ -17,10 +17,10 @@ RUN \
   useradd -ms /bin/bash $USER_NAME && \
   mkdir -p $APP_HOME
 
-ADD BACKEND_JAR ${APP_HOME}/backend.jar
+ADD $BACKEND_JAR ${APP_HOME}/backend.jar
 
 RUN mkdir ${APP_HOME}/public
-ADD FRONTEND_ASSETS_DIR ${APP_HOME}/public
+ADD $FRONTEND_ASSETS_DIR ${APP_HOME}/public
 
 RUN \
   chown $USER_NAME $APP_HOME/backend.jar && \
