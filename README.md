@@ -118,6 +118,8 @@ JDBC_URL=
 
 ## to view
 > docker service ls
+> docker service inspect <serviceid> # this lists environment, and targetports
+# swarm ingress network: --publish <PUBLISHED-PORT>:<TARGET-PORT> :  https://docs.docker.com/engine/swarm/ingress/
 # service logs
 > docker service ps <service>
 > docker logs $(docker inspect --format "{{.Status.ContainerStatus.ContainerID}}" ps)

@@ -1,3 +1,9 @@
+sp_configure 'show advanced options', 1;
+RECONFIGURE;
+GO
+sp_configure 'user instance timeout', 300;
+RECONFIGURE;
+GO
 DROP DATABASE IF EXISTS $(dbname);
 go
 DROP LOGIN $(user)
