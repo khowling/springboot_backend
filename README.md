@@ -31,7 +31,7 @@ $env:PIPE_URL="np:\\.\pipe\" + $env:INSTANCE + "\tsql\query"
 
 
 ## re-create the development database and tables
-sqlcmd -S $env:PIPE_URL -v user=$env:JDBC_USERNAME -v dbname=$env:JDBC_DBNAME -v passwd=$env:JDBC_PASSWORD -i env_setup\localdb.sql
+sqlcmd -S $env:PIPE_URL -v user=$env:JDBC_USERNAME -v dbname=$env:JDBC_DBNAME -v passwd=$env:JDBC_PASSWORD -i env_setup\init_localdb.sql
 ## check all good
 sqlcmd -S $env:PIPE_URL -U $env:JDBC_USERNAME -P $env:JDBC_PASSWORD -d $env:JDBC_DBNAME
         > select name from sys.tables;

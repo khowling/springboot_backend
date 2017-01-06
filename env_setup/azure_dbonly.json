@@ -20,7 +20,7 @@
         "core_resources_name":     "[toLower(resourceGroup().name)]",
         "core_sql_server_id":      "[resourceId('Microsoft.Sql/servers',     variables('core_resources_name'))]",
         "qualified_app_name":      "[variables('varified_app_name')]",
-        "qualified_database_name": "[concat(variables('core_resources_name'), '/', variables('qualified_app_name'))]",
+        "qualified_database_name": "[concat(variables('core_resources_name'), '/', variables('qualified_app_name'))]"
     },
     "resources": [
         {

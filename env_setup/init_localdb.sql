@@ -23,4 +23,4 @@ go
 USE $(dbname);
 go
 
-:r src\main\resources\import.sql
+:r env_setup\build_schema.sql
