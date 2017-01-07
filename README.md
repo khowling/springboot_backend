@@ -92,9 +92,23 @@ JDBC_URL=
 ## Setup cluster in Azure
 # create RG/VNET, gateway subnet, application gateway
 > az ....
+#  option (1) ---- use Docker VM Extension 
+> install the new azure-cli : https://github.com/azure/azure-cli
+> install docker-cli https://github.com/docker/docker/releases
+> generate the certs: https://gist.github.com/bradrydzewski/a6090115b3fecfc25280
+
+> az group create -l uksouth -n MyRG
+## NOTE: if not specified, this will create machines in a vnet & subnets, using ~.ssh & a LB with NAT rules for SSH from port 50000
+> az vmss create -g myrg01 -n swcluster01 --image UbuntuLTS --instance-count 2  --public-ip-address-dns-name swcluster01
+
+> ssh swcluster01.uksouth.cloudapp.azure.com -p 50001
+> echo "{\"certs\": {\"ca\": \"`base64 -w 0 ./ca.pem`\", \"key\": \"`base64 -w 0 ./server-key.pem`\", \"cert\": \"`base64 -w 0 ./server-cert.pem`\"}}" >ps.json
+> az vmss extension set -g myrg01 --vmss-name swcluster01 --publisher Microsoft.Azure.Extensions --name DockerExtension --protected-settings ./ps.json
+
+# option (2) ---- use docker-machine
 # docker cluster (hosts managed by Docker Machine)
 
-> docker-machine create --driver azure --azure-ssh-user "kehowli" --azure-subscription-id "95efa97a-9b5d-4f74-9f75-a3396e23344d" --azure-resource-group "TeamBetaVSTSTest" --azure-vnet "TeamBetaVSTSTest-vnet" --azure-subnet "machinecluster" --azure-subnet-prefix "172.18.0.32/28" --azure-location "westeurope" --swarm --swarm-master machinehost01
+> docker-machine create --driver azure --azure-ssh-user "kehowli" --azure-subscription-id "95efa97a-9b5d-4f74-9f75-a3396e23344d" --azure-resource-group "TeamBetaVSTSTest" --azure-vnet "TeamBetaVSTSTest-vnet" --azure-subnet "machinecluster" --azure-subnet-prefix "172.18.0.32/28" --azure-static-public-ip --azure-location "westeurope" --swarm --swarm-master machinehost01
 > docker-machine ls
 > docker-machine ssh machinehost01
 ## point your local docker cli client to the node machinehost01
@@ -102,7 +116,6 @@ JDBC_URL=
 > docker swarm init  # IMPORTANT take a note of the join cmd!
 > docker node ls
 ## create 2nd docker host, and run the join command
-
 
 ## deploy image to cluster
 #  The swarm manager accepts the service description as the desired state for your application
@@ -112,7 +125,7 @@ JDBC_URL=
 # connect to docker host, get the cert information using 
  >  eval $(docker-machine env <manager>)
  > docker-machine config <manager>
-#command
+#command (--publish <TARGET-PORT (node port)>:<SERVICE-PORT (container port)>)
 >  service create --with-registry-auth --publish 8080:5001 --env JDBC_DRIVER=com.microsoft.sqlserver.jdbc.SQLServerConnection --env JDBC_URL=jdbc:sqlserver://$(RG_NAME).database.windows.net:1433;database=$(Build.Repository.Name)-$(Build.SourceVersion);user=$(sql_username)@$(RG_NAME);password=$(sql_password);encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30; --env PORT=8080 teambeta-microsoft.azurecr.io/$(Build.Repository.Name):8
 
 
