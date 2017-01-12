@@ -1,0 +1,271 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "swarm_name": {
+            "type": "string",
+            "metadata": {
+                "description": "swarm name (will be used with resource group name for uniqueness)" 
+            }
+        },
+        "swarm_nodes": {
+            "type": "string",
+            "allowedValues": [ "1","2","3","4","5","6","7","8","9","10" ],
+            "metadata": {
+                "description": "number of swarm nodes" 
+            }
+        },
+        "adminUsername": {
+            "type": "string",
+            "metadata": {
+                "description": "linux admin username (ssh)" 
+            }
+        },
+        "ssh_keyData": {
+            "type": "string",
+            "metadata": {
+                "description": "contents of ~/.ssh/id_rsa.pub" 
+            }
+        },
+        "vnet_resource_group": {
+            "type": "string",
+            "metadata": {
+                "description": "Resource Group containing  VNET to deploy swarm into" 
+            }
+        },
+        "vnet_name": {
+            "type": "string",
+            "metadata": {
+                "description": "VNET name to deploy swarm into" 
+            }
+        },
+        "vnet_subnet_name": {
+            "type": "string",
+            "metadata": {
+                "description": "VNET Subnet name to deploy swarm into" 
+            }
+        },
+        "docker_ca_base64": {
+            "type": "string",
+            "metadata": {
+                "description": "Docker engine TLS configuration" 
+            }
+        },
+        "docker_key_base64": {
+            "type": "string",
+            "metadata": {
+                "description": "Docker engine TLS configuration" 
+            }
+        },
+        "docker_cert_base64": {
+            "type": "string",
+            "metadata": {
+                "description": "Docker engine TLS configuration" 
+            }
+        }
+
+    },
+    "variables": {
+        "swarm_nodes_int": "[int(parameters('swarm_nodes'))]",
+        "unique_string": "[uniqueString(resourceGroup().id)]",
+        "cluster_name": "[toLower(replace(replace(concat(parameters('swarm_name'),'-', resourceGroup().name),' ','-'), '_', '-'))]",
+        "ip_name": "[concat(variables('cluster_name'), 'pip')]",
+        "lb_name": "[concat(variables('cluster_name'), 'lb')]",
+        "store_name": "[replace(variables('cluster_name'), '-', '1')]",
+        "vmss_name": "[concat(variables('cluster_name'), 'vmss')]",
+        "bepool_name": "[concat(variables('cluster_name'), 'be')]",
+        "natpool_ssh_name": "[concat(variables('cluster_name'), 'natssh')]",
+        "natpool_doc_name": "[concat(variables('cluster_name'), 'natdoc')]",
+        "ip_id":     "[resourceId('Microsoft.Network/publicIPAddresses', variables('ip_name'))]",
+        "lb_id":     "[resourceId('Microsoft.Network/loadBalancers', variables('lb_name'))]",
+        "store_id":  "[resourceId('Microsoft.Storage/storageAccounts', variables('store_name'))]",
+        "vmss_id":  "[resourceId('Microsoft.Compute/virtualMachineScaleSets', variables('vmss_name'))]"
+    },
+    "resources": [
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('ip_name')]",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2016-03-30",
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic",
+        "dnsSettings": {
+          "domainNameLabel": "[variables('cluster_name')]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Network/loadBalancers",
+      "name": "[variables('lb_name')]",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2016-03-30",
+      "dependsOn": [
+        "[variables('ip_id')]"
+      ],
+      "properties": {
+        "frontendIPConfigurations": [
+          {
+            "name": "LoadBalancerFrontEnd",
+            "properties": {
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('ip_name'))]"
+              }
+            }
+          }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "[variables('bepool_name')]"
+          }
+        ],
+        "inboundNatPools": [
+          {
+            "name": "[variables('natpool_ssh_name')]",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(variables('lb_id'),'/frontendIPConfigurations/loadBalancerFrontEnd')]"
+              },
+              "protocol": "tcp",
+              "frontendPortRangeStart": "50000",
+              "frontendPortRangeEnd": "50119",
+              "backendPort": "22"
+            }
+          },
+          {
+            "name": "[variables('natpool_doc_name')]",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(variables('lb_id'),'/frontendIPConfigurations/loadBalancerFrontEnd')]"
+              },
+              "protocol": "tcp",
+              "frontendPortRangeStart": "2376",
+              "frontendPortRangeEnd": "2377",
+              "backendPort": "2376"
+            }
+          }
+        ]
+      }
+    },
+    {
+        "type": "Microsoft.Storage/storageAccounts",
+        "name": "[variables('store_name')]",
+        "location": "[resourceGroup().location]",
+        "apiVersion": "2015-06-15",
+        "properties": {
+            "accountType": "Premium_LRS"
+        }
+    },
+    {
+        "type": "Microsoft.Compute/virtualMachineScaleSets",
+        "sku": {
+            "name": "Standard_F2s",
+            "tier": "Standard",
+            "capacity": "[variables('swarm_nodes_int')]"
+        },
+        "name": "[variables('vmss_name')]",
+        "apiVersion": "2015-06-15",
+        "location": "[resourceGroup().location]",
+        "properties": {
+            "upgradePolicy": {
+                "mode": "Manual"
+            },
+            "virtualMachineProfile": {
+                "osProfile": {
+                    "computerNamePrefix": "[variables('cluster_name')]",
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": true,
+                        "ssh": {
+                            "publicKeys": [
+                                {
+                                    "path": "[concat('/home/', parameters('adminUsername'), '/.ssh/authorized_keys')]",
+                                    "keyData": "[parameters('ssh_keyData')]"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "storageProfile": {
+                    "osDisk": {
+                        "vhdContainers": [
+                            "[concat('https://', variables('store_name'), '.blob.core.windows.net/', 'osdisk')]"
+                        ],
+                        "name": "osdisk",
+                        "caching": "ReadOnly",
+                        "createOption": "FromImage"
+                    },
+                    "imageReference": {
+                        "publisher": "Canonical",
+                        "offer": "UbuntuServer",
+                        "sku": "16.04.0-LTS",
+                        "version": "latest"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaceConfigurations": [
+                        {
+                            "name": "[concat(variables('cluster_name'), '-nic')]",
+                            "properties": {
+                                "primary": "true",
+                                "ipConfigurations": [
+                                    {
+                                        "name": "[concat(variables('cluster_name'), '-ipc')]",
+                                        "properties": {
+                                            "subnet": {
+                                                "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', parameters('vnet_resource_group'), '/providers/Microsoft.Network/virtualNetworks/', parameters('vnet_name'), '/subnets/', parameters('vnet_subnet_name'))]"
+                                            },
+                                            "loadBalancerBackendAddressPools": [
+                                                {
+                                                    "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/loadBalancers/', variables('lb_name'), '/backendAddressPools/', variables('bepool_name'))]"
+                                                }
+                                            ],
+                                            "loadBalancerInboundNatPools": [
+                                                {
+                                                    "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/loadBalancers/', variables('lb_name'), '/inboundNatPools/', variables('natpool_ssh_name'))]"
+                                                },
+                                                {
+                                                    "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/loadBalancers/', variables('lb_name'), '/inboundNatPools/', variables('natpool_doc_name'))]"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "extensionProfile": {
+                    "extensions": [
+                        {
+                            "name": "[concat(variables('vmss_name'), 'docker')]",
+                            "properties": {
+                                "publisher": "Microsoft.Azure.Extensions",
+                                "type": "DockerExtension",
+                                "typeHandlerVersion": "1.2",
+                                "autoUpgradeMinorVersion": true,
+                                "settings": {
+                                    "docker":{
+                                        "port": "2376",
+                                        "options": ["-D", "--dns=8.8.8.8"]
+                                    }
+                                },
+                                "protectedSettings": {
+                                    "certs": {
+                                        "ca": "[parameters('docker_ca_base64')]",
+                                        "key": "[parameters('docker_key_base64')]",
+                                        "cert": "[parameters('docker_cert_base64')]"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "dependsOn": [
+            "[variables('store_id')]",
+            "[variables('lb_id')]"
+        ]
+    }
+    ]
+}

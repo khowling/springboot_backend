@@ -97,9 +97,9 @@ JDBC_URL=
 > install docker-cli https://github.com/docker/docker/releases
 > generate the certs: https://gist.github.com/bradrydzewski/a6090115b3fecfc25280
 
-> az group create -l uksouth -n MyRG
+> az group create -l uksouth -n keith1
 ## NOTE: if not specified, this will create machines in a vnet & subnets, using ~.ssh & a LB with NAT rules for SSH from port 50000
-> az vmss create -g myrg01 -n swcluster01 --image UbuntuLTS --instance-count 2  --public-ip-address-dns-name swcluster01
+> az group deployment create -g  keith1 -n keith1_d1 --template-file ./env_setup/azure_vmss_swarm.json --parameters "{\"ssh_keyData\":  \"`cat ~/.ssh/id_rsa.pub`\"}"
 
 > ssh swcluster01.uksouth.cloudapp.azure.com -p 50001
 > echo "{\"certs\": {\"ca\": \"`base64 -w 0 ./ca.pem`\", \"key\": \"`base64 -w 0 ./server-key.pem`\", \"cert\": \"`base64 -w 0 ./server-cert.pem`\"}}" >ps.json
